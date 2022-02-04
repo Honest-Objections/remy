@@ -1,0 +1,25 @@
+{
+  "short_name": "Remy",
+  "name": "Remy Recipe Manager",
+  "description": "An extension to simplify and track recipes you love.",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open the popup"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+        "matches": ["http://*/*", "https://*/*"],
+        "js": ["./static/js/content.js"]
+    }
+ ],
+  "icons": {
+    "16": "remy_icon.png",
+    "48": "remy_icon.png",
+    "128": "remy_icon.png"
+  }
+}
