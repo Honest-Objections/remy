@@ -1,11 +1,17 @@
 import numericQuantity from 'numeric-quantity';
+import { parseJsonSourceFileConfigFileContent } from 'typescript';
 var convert = require('convert-units')
 
 type Unit = {
   abbr: string
   system: string
 }
-
+type JsonUnit = {
+  name: string,
+  originalSentence: string, 
+  unit: string,
+  quantity: number
+}
 export class Ingredient {
   
   
@@ -40,13 +46,28 @@ export class Ingredient {
     this._element = element
   }
   
-  private originalSentence: string = "" 
-
-  constructor(sentence: string) {
-    this.getUnit('floz')
-    this.originalSentence = sentence
-    this.extractMeasurement()
+  private _originalSentence: string = "" 
+  public get originalSentence() : string {
+    return this._originalSentence
   }
+
+  constructor(input: string) {
+    try {
+
+      const jsInput = JSON.parse(input) as JsonUnit
+      this._name = jsInput.name
+      this._quantity = jsInput.quantity
+      this._unit = this.getUnit(jsInput.unit)
+      this._originalSentence = jsInput.originalSentence
+
+    } catch (e) {
+        
+      this._originalSentence = input as string
+      this.extractMeasurement()
+
+    }
+  }
+
 
   private simplifySentence() : string {
     var prefixes = /^[\W\s]*/g // starting 
@@ -59,7 +80,7 @@ export class Ingredient {
     var imperialPositiveModifier = /(\d?)\s?heaped\s/g
     var imperialNegativeModifier = /(\d?)\s?level\s/g
 
-    return this.originalSentence
+    return this._originalSentence
       .replace(unicodeFractions, (match, whole, fraction) => `${numericQuantity(fraction) + Number(whole)}`)
       .replace(typedFractions, (match, fraction, unit) => `${numericQuantity(fraction)} ${unit}`)
       .replace(simplified, '')
@@ -143,7 +164,6 @@ export class Ingredient {
     return {}
   }
 
-
   private getUnit(proposedUnit : string | undefined) : Unit | undefined {
     const units = convert().list('mass').concat(convert().list('volume'))
     var unitInfo = undefined
@@ -163,6 +183,15 @@ export class Ingredient {
     }
     
     return unitInfo
+  }
+
+  public toJson() : string {
+    return JSON.stringify({
+      name: this.name,
+      originalSentence: this.originalSentence, 
+      unit: this.unit,
+      quantity: this.quantity
+    })
   }
   
 }

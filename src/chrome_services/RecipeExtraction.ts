@@ -5,23 +5,35 @@ import { Recipe } from '../types/Recipe';
 import numericQuantity from 'numeric-quantity';
 var convert = require('convert-units')
  
-const messagesFromReactAppListener = (msg: DOMMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: Recipe) => void) => {
+
+var recipe: Recipe | undefined = undefined
+
+const messagesFromReactAppListener = (msg: DOMMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: string) => void) => {
     console.log('[content.js]. Message received', msg);
   
-
-    const ingredients = getIngredients()
-
-    let recipe: Recipe = {
-        isValid: ingredients.length > 0, 
-        isGoogleAssistantReady: false, 
-        name: undefined, 
-        ingredients: getIngredients(),
-        steps: getSteps(),
-        serves: NaN
+    switch (msg.type) {
+        case 'GET_RECIPE': 
+        {
+            recipe = new Recipe()
+            recipe.ingredients = getIngredients()
+        
+            console.log('[content.js]. Message response', recipe)
+            sendResponse(recipe.toJson()); 
+            break
+        }
+        case 'SHOW_INGREDIENTS':
+        {
+            if (recipe !== undefined) recipe?.ingredients[0]?.element?.scrollIntoView()
+            break; 
+        }
+        case 'SHOW_STEPS': 
+        {
+            console.log("SHOW_STEPS TODO")
+            break; 
+        }
     }
-  
-    console.log('[content.js]. Message response', recipe);
-    sendResponse(recipe); 
+
+    
 }
 
 
