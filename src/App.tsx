@@ -1,13 +1,15 @@
-import React from 'react';
-import './App.css';
-import { DOMMessage, Recipe } from './types/DOMMessages';
+import React from 'react'
+import './App.css'
+
+import { DOMMessage } from './types/DOMMessages'
+import { Recipe } from './types/Recipe'
 
 const { useState } = React;
 
 
 function App() {
 
-  const [recipe, setRecipe] = useState<Recipe>({isValid: false, isGoogleAssistantReady: false, ingredients: [], steps: []});
+  const [recipe, setRecipe] = useState<Recipe>({isValid: false, isGoogleAssistantReady: false, ingredients: [], steps: [], serves: 0 });
 
     return (
       <div className="w-full">

@@ -1,7 +1,10 @@
 import numericQuantity from 'numeric-quantity';
-import { cursorTo } from 'readline';
 var convert = require('convert-units')
 
+type Unit = {
+  abbr: string
+  system: string
+}
 
 export class Ingredient {
   
@@ -16,15 +19,28 @@ export class Ingredient {
     return Number(this._quantity.toFixed(2))
   }
 
-  private _unit: { abbr: string } = { abbr: '' }
+  private _unit: Unit | undefined = undefined
   public get unit() : string {
-    return this._unit.abbr
+    return this._unit?.abbr || ''
+  }
+
+  private _originalUnit: Unit | undefined = undefined
+  public get originalUnit(): Unit | undefined {
+    return this._originalUnit
+  }
+
+  private _element: Element | undefined
+  public get element() : Element | undefined  {
+    return this._element
+  }
+  public set element(element: Element | undefined) {
+    this._element = element
   }
   
   private originalSentence: string = "" 
 
   constructor(sentence: string) {
-
+    this.getUnit('floz')
     this.originalSentence = sentence
     this.extractMeasurement()
   }
@@ -35,6 +51,10 @@ export class Ingredient {
     var brackets = /\((?:[^)(]+|\((?:[^)(]+|\([^)(]*\))*\))*\)/g
     var unicodeFractions = /(\d*)\s?([\u2150-\u215E\u00BC-\u00BE])/g
     var typedFractions = /(?<quantity>\d+\/\.?\d*)\s?(?<unit>[^\s\/+,\.:;]+)/
+    var tablespoonAlias = /tbsp/g
+    var floralOzAlias = /\d?(fl\s?oz)\s/g
+    var imperialPositiveModifier = /(\d?)\s?heaped\s/g
+    var imperialNegativeModifier = /(\d?)\s?level\s/g
 
     return this.originalSentence
       .replace(unicodeFractions, (match, whole, fraction) => `${numericQuantity(fraction) + Number(whole)}`)
@@ -42,6 +62,10 @@ export class Ingredient {
       .replace(simplified, '')
       .replace(prefixes, '')
       .replace(brackets, '')
+      .replace(tablespoonAlias, 'tablespoon')
+      .replace(floralOzAlias, (match, floz) => match.replace(floz, 'fl-oz'))
+      .replace(imperialPositiveModifier, (match, number) => `${Number(number) * 1.2}`)
+      .replace(imperialNegativeModifier, (match, number) => `${Number(number) * 0.8}`)
   }
 
   private extractMeasurement() : {} {
@@ -49,29 +73,30 @@ export class Ingredient {
     var sentence = this.simplifySentence()
     var measurements = sentence.matchAll(measurementsExp)
 
-    var unit = undefined
+    
+    var unit : Unit | undefined = undefined
     var quantity = NaN
 
+    var measurementsFound = 0
     for (const measurement of measurements) {     
-      let potentialUnit = this.getUnit(measurement.groups?.unit) || {}
+      let potentialUnit : Unit | undefined = this.getUnit(measurement.groups?.unit) || undefined
       let potentialQuantity = Number(measurement.groups?.quantity) || NaN
 
       // Is a valid unit 
-      if (potentialUnit.hasOwnProperty('abbr')) {
+      if (potentialUnit !== undefined) {
         
-        // @ts-ignore
         var system = potentialUnit['system']
-        if (system == 'imperial') {
+        if (system === 'imperial') {
           
-          // @ts-ignore add imperial together
-          if (unit?.system == 'imperial') {
+          // add imperial together
+          if (unit?.system === 'imperial') {
             var additionalQty = convert(potentialQuantity).from(potentialUnit.abbr).to(unit.abbr)
             quantity += additionalQty
           } else if (unit === undefined) {
             unit = potentialUnit
             quantity = potentialQuantity
           }
-        } else if (system == 'metric') {
+        } else if (system === 'metric') {
           unit = potentialUnit
           quantity = potentialQuantity
         }
@@ -82,6 +107,12 @@ export class Ingredient {
         sentence = sentence.replace(quantity.toString(), '')
       }
 
+      measurementsFound ++
+    }
+
+    if (measurementsFound == 0) {
+      quantity = 1
+      sentence = sentence.replace(/^An?/ig, '')
     }
 
     // Set name 
@@ -89,7 +120,7 @@ export class Ingredient {
     if (remainingWords) this._name = remainingWords[0]
 
     // convert to metric by default 
-    if (unit !== undefined && unit.system == 'imperial') {
+    if (unit !== undefined && unit.system === 'imperial') {
       var possibilities = convert().from(unit.abbr).possibilities()
       if (possibilities.includes('ml')) {
         quantity = convert(quantity).from(unit.abbr).to('ml')
@@ -101,16 +132,15 @@ export class Ingredient {
     }
 
     this._quantity = quantity
-    // @ts-ignore
-    this._unit = unit || {abbr: ''}
+    this._unit = unit || undefined
 
     return {}
   }
 
 
-  private getUnit(proposedUnit : string | undefined) : {} {
+  private getUnit(proposedUnit : string | undefined) : Unit | undefined {
     const units = convert().list('mass').concat(convert().list('volume'))
-    var unitInfo = {}
+    var unitInfo = undefined
     
     if (proposedUnit) {
       // look through all units 
@@ -118,8 +148,8 @@ export class Ingredient {
         // look through all variants of unit   
         Object.keys(u).forEach(format => {
           // @ts-ignore
-          if (u[format].toLowerCase() == proposedUnit.toLowerCase()) {
-              unitInfo = u
+          if (u[format].toLowerCase() === proposedUnit.toLowerCase()) {
+              unitInfo = u as Unit
               return 
           }
         }); 
