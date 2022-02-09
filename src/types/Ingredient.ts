@@ -28,6 +28,9 @@ export class Ingredient {
   public get originalUnit(): Unit | undefined {
     return this._originalUnit
   }
+  private set originalUnit(unit: Unit | undefined) {
+    this._originalUnit = unit 
+  }
 
   private _element: Element | undefined
   public get element() : Element | undefined  {
@@ -101,6 +104,7 @@ export class Ingredient {
           quantity = potentialQuantity
         }
 
+        // remove quantity once evaluated
         sentence = sentence.replace(measurement[0], '')
       } else {
         quantity = potentialQuantity
@@ -110,9 +114,11 @@ export class Ingredient {
       measurementsFound ++
     }
 
-    if (measurementsFound == 0) {
+    if (measurementsFound === 0) {
       quantity = 1
       sentence = sentence.replace(/^An?/ig, '')
+    } else if (measurementsFound === 1) {
+      this.originalUnit = unit
     }
 
     // Set name 
