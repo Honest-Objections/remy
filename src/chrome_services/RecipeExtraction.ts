@@ -2,10 +2,6 @@ import { DOMMessage } from '../types/DOMMessages';
 import { Ingredient } from '../types/Ingredient';
 import { Recipe } from '../types/Recipe';
 
-import numericQuantity from 'numeric-quantity';
-var convert = require('convert-units')
- 
-
 var recipe: Recipe | undefined = undefined
 
 const messagesFromReactAppListener = (msg: DOMMessage, sender: chrome.runtime.MessageSender, sendResponse: (response: string) => void) => {
@@ -16,7 +12,7 @@ const messagesFromReactAppListener = (msg: DOMMessage, sender: chrome.runtime.Me
         {
             recipe = new Recipe()
             recipe.ingredients = getIngredients()
-        
+            recipe.isGoogleFriendly = isGoogleFriendly()
             console.log('[content.js]. Message response', recipe)
             sendResponse(recipe.toJson()); 
             break
@@ -34,6 +30,31 @@ const messagesFromReactAppListener = (msg: DOMMessage, sender: chrome.runtime.Me
     }
 
     
+}
+
+function isGoogleFriendly () {
+    var scripts = [
+        ...document.getElementsByTagName("head")[0].querySelectorAll("script"), 
+        ...document.getElementsByTagName("body")[0].querySelectorAll("script")
+    ]
+    var isReady = false
+
+    scripts.forEach(s => {
+        var type = s.getAttribute("type")
+        
+        if (type == "application/ld+json") {
+            var recipe = JSON.parse(s.innerHTML)
+            // @ts-ignore
+            if (recipe['@type'] === "Recipe") {
+                isReady = true
+            }
+            console.log("recipe", recipe['@type'])
+            console.log(recipe)
+        }
+        return 
+    })
+
+    return isReady
 }
 
 

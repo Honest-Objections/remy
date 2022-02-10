@@ -106,6 +106,13 @@ let ingredients : Test[] = [
         name: "sugar",
         quantity: 23.66,
         unit: 'ml'
+    },
+    {
+        description: "Multiples of blocked quantity",
+        test: `6 x 400g cans chopped tomatoes`,
+        name: "400g cans chopped tomatoes",
+        quantity: 6,
+        unit: ''
     }
 ]
 

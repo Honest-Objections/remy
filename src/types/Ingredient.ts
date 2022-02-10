@@ -1,5 +1,5 @@
 import numericQuantity from 'numeric-quantity';
-import { parseJsonSourceFileConfigFileContent } from 'typescript';
+import { v4 as uuid } from 'uuid'
 var convert = require('convert-units')
 
 type Unit = {
@@ -7,6 +7,7 @@ type Unit = {
   system: string
 }
 type JsonUnit = {
+  id: string,
   name: string,
   originalSentence: string, 
   unit: string,
@@ -14,7 +15,11 @@ type JsonUnit = {
 }
 export class Ingredient {
   
-  
+  private _id: string
+  public get id(): string {
+    return this._id
+  }
+
   private _name: string = "unknown"
   public get name() : string {
     return this._name
@@ -59,9 +64,11 @@ export class Ingredient {
       this._quantity = jsInput.quantity
       this._unit = this.getUnit(jsInput.unit)
       this._originalSentence = jsInput.originalSentence
+      this._id = jsInput.id
 
     } catch (e) {
         
+      this._id = uuid()
       this._originalSentence = input as string
       this.extractMeasurement()
 
@@ -187,6 +194,7 @@ export class Ingredient {
 
   public toJson() : string {
     return JSON.stringify({
+      id: this._id,
       name: this.name,
       originalSentence: this.originalSentence, 
       unit: this.unit,
